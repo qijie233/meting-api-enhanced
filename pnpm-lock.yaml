@@ -38,6 +38,9 @@ importers:
       pac-proxy-agent:
         specifier: ^7.2.0
         version: 7.2.0
+      pnpm:
+        specifier: ^11.9.0
+        version: 11.9.0
       qrcode:
         specifier: ^1.5.4
         version: 1.5.4
@@ -1950,6 +1953,11 @@ packages:
   pngjs@5.0.0:
     resolution: {integrity: sha512-40QW5YalBNfQo5yRYmiw7Yz6TKKVr3h6970B2YE+3fQpsWcrbj1PzJgxeJ19DRQjhMbKPIuMY8rFaXc8moolVw==}
     engines: {node: '>=10.13.0'}
+
+  pnpm@11.9.0:
+    resolution: {integrity: sha512-vWgtXQP+Ul73yf1ngMaITR51asTJyf4AxTh4KCQxDc+Q493E9Tg18G3669UIXkGFXgvLs7YN4qxburieUDbwOw==}
+    engines: {node: '>=22.13'}
+    hasBin: true
 
   possible-typed-array-names@1.1.0:
     resolution: {integrity: sha512-/+5VFTchJDoVj3bhoqi6UeymcD00DAwb1nJwamzPvHEszJ4FpF6SNNbUbOS8yI56qHzdV8eK0qEfOSiodkTdxg==}
@@ -4802,6 +4810,8 @@ snapshots:
       - supports-color
 
   pngjs@5.0.0: {}
+
+  pnpm@11.9.0: {}
 
   possible-typed-array-names@1.1.0: {}
 

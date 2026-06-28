@@ -11,6 +11,7 @@ const fileUpload = require('express-fileupload')
 const decode = require('safe-decode-uri-component')
 const logger = require('./util/logger.js')
 const { APP_CONF } = require('./util/config.json')
+const stats = require('./util/stats')
 
 /**
  * The version check result.
@@ -193,6 +194,22 @@ async function constructServer(moduleDefs) {
   app.set('trust proxy', true)
 
   /**
+   * 调用统计中间件 —— 每个 HTTP 请求递增 api 计数器
+   * 排除 /stats 自身（避免 self-reference 膨胀计数）
+   * recordApi 是同步函数（Node 单线程 JS 中 fs.writeFileSync 原子安全）
+   */
+  app.use((req, res, next) => {
+    if (req.path !== '/stats') {
+      try {
+        stats.recordApi()
+      } catch (e) {
+        logger.warn('stats.recordApi failed', e)
+      }
+    }
+    next()
+  })
+
+  /**
    * Serving static files
    */
   app.use(express.static(path.join(__dirname, 'public')))
@@ -260,9 +277,31 @@ async function constructServer(moduleDefs) {
   )
 
   /**
-   * Cache
+   * /meting 调用统计 —— 必须放在 apicache 之前，
+   * 否则被缓存命中的请求不计入 meting 计数
    */
-  app.use(cache('2 minutes', (_, res) => res.statusCode === 200))
+  app.use('/meting', (req, res, next) => {
+    // 排除文档页跳转（缺 type/id 时是 302 重定向到 /meting.html）
+    if (req.query && req.query.type && req.query.id) {
+      try {
+        stats.recordMeting()
+      } catch (e) {
+        logger.warn('stats.recordMeting failed', e)
+      }
+    }
+    next()
+  })
+
+  /**
+   * Cache
+   * 排除 /stats —— 否则首次空数据会被缓存 2 分钟，期间页面看不到真实计数
+   */
+  app.use(
+    cache(
+      '2 minutes',
+      (req, res) => req.path !== '/stats' && res.statusCode === 200,
+    ),
+  )
 
   /**
    * Special Routers

@@ -1,196 +1,178 @@
-<p align="center">
-  <img src="./public/static/neteaselogo.png" alt="网易云音乐 API Enhanced Logo" />
-</p>
+# meting-api-enhanced
 
-<p align="center">
-  <a href="https://www.npmjs.com/package/@neteasecloudmusicapienhanced/api">
-    <img src="https://img.shields.io/npm/v/@neteasecloudmusicapienhanced/api?style=flat-square" alt="NPM Version" />
-  </a>
-  <a href="https://www.npmjs.com/package/@neteasecloudmusicapienhanced/api">
-    <img src="https://img.shields.io/npm/dm/@neteasecloudmusicapienhanced/api?style=flat-square" alt="NPM Downloads" />
-  </a>
-  <a href="https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced">
-    <img src="https://img.shields.io/github/license/NeteaseCloudMusicApiEnhanced/api-enhanced?style=flat-square" alt="License" />
-  </a>
-  <a href="https://nodejs.org/">
-    <img src="https://img.shields.io/node/v/@neteasecloudmusicapienhanced/api?style=flat-square" alt="Node Version" />
-  </a>
-  <a href="https://hub.docker.com/r/moefurina/ncm-api">
-    <img src="https://img.shields.io/docker/v/moefurina/ncm-api?style=flat-square" alt="Docker Version" />
-  </a>
-  <a href="https://hub.docker.com/r/moefurina/ncm-api">
-    <img src="https://img.shields.io/docker/pulls/moefurina/ncm-api?style=flat-square" alt="Docker Pulls" />
-  </a>
-  <a href="https://www.typescriptlang.org/">
-    <img src="https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square&logo=typescript" alt="TypeScript" />
-  </a>
-</p>
+**完全兼容 meting 协议的网易云音乐 API** — 基于 [api-enhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced)，新增 meting 兼容端点、VIP 解锁、自动解灰、调用统计等增强功能。
 
+[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green?style=flat-square&logo=node.js)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-ready-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](./LICENSE)
 
+---
 
-## 项目简介
+## 核心能力对比
 
-网易云音乐第三方 Node.js API, 支持丰富的音乐相关接口，适合自建服务、二次开发和多平台部署
-
-> [!IMPORTANT]
->
-> ## 注意
->
-> - 本项目是自由项目, 不带任何担保, 在基于`MIT License`的许可下, 任何人都可以自由使用、修改和分发本项目的代码, 包括用于商业目的. 
-> - 该项目是个合作计划, 有很多人参与了此次贡献, 前往 [Contributors](https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced/graphs/contributors) 页面查看所有贡献者
-> - 原作者项目 [Binaryify/NeteaseCloudMusicApi](https://github.com/binaryify/NeteaseCloudMusicApi) 并非完全停止维护, 你可以在 [NeteaseCloudMusicApi 的 NPMJS 页面](https://www.npmjs.com/package/NeteaseCloudMusicApi) 查看最新版本信息。   
-> - 感谢尊重和理解!
+| | 原 api-enhanced | 本项目 |
+|--|---------------|--------|
+| meting 兼容端点 | | |
+| `/meting` | | |
+| VIP Cookie 全链路透传 | | |
+| 灰色歌曲自动解灰 | | |
+| 调用统计（总/今日） | | |
+| 听歌打卡 | | |
+| ~400 个原生 API 端点 | | |
 
 ## 快速开始
 
 ### 环境要求
 
-- Node.js 18 及以上
-- 推荐使用 pnpm 进行依赖管理
+- **Node.js 18+**
+- 推荐 **pnpm**
 
 ### 安装
 
 ```bash
-git clone https://github.com/neteasecloudmusicapienhanced/api-enhanced.git
-cd api
-pnpm i
+git clone https://github.com/qijie233/meting-api-enhanced.git
+cd meting-api-enhanced
+pnpm install
 ```
 
-### 启动服务
+### 启动
 
 ```bash
 # 默认端口 3000
 node app.js
 
-# 指定端口（如 4000）
-PORT=4000 node app.js  # Mac/Linux
-set PORT=4000 && node app.js  # Windows
+# 自定义端口（Linux/macOS）
+PORT=4000 node app.js
+
+# Windows PowerShell
+$env:PORT=4000; node app.js
 ```
 
-### 重要提示
+服务启动后访问：
 
-- 调用前请务必阅读文档的 [调用前须知](https://neteasecloudmusicapienhanced.js.org/#/?id=%e8%b0%83%e7%94%a8%e5%89%8d%e9%a1%bb%e7%9f%a5) 部分。
-- 推荐将敏感信息（如 cookie）通过部署平台的环境变量进行配置。
-
-## 在线体验与文档
-
-- [在线文档](https://neteasecloudmusicapienhanced.js.org/)
-- [NPM 包地址](https://www.npmjs.com/package/@neteasecloudmusicapienhanced/api)
-- [Dockerhub 主页](https://hub.docker.com/r/moefurina/ncm-api)
-
-## 常见部署方式
-
-- 推荐参考[在线文档](https://neteasecloudmusicapienhanced.js.org/)
-
-## Docker 部署说明
-
-本项目支持通过 Docker 一键部署，无需手动安装 Node.js 或依赖。
-
-> 注意: 在 docker 中运行的时候, 由于使用了 request 来发请求, 所以会检查几个 proxy 相关的环境变量(如下所列), 这些环境变量 会影响到 request 的代理, 详情请参考[request 的文档](https://github.com/request/request#proxies), 如果这些环境变量 指向的代理不可用, 那么就会造成错误, 所以在使用 docker 的时候一定要注意这些环境变量. 不过, 要是你在 query 中加上了 proxy 参数, 那么环境变量会被覆盖, 就会用你通过 proxy 参数提供的代理了.
-
-request 相关的环境变量
-
-1. http_proxy
-2. https_proxy
-3. HTTP_PROXY
-4. HTTPS_PROXY
-5. no_proxy
-6. NO_PROXY
-
-```shell
-docker pull moefurina/ncm-api:latest
-
-docker run -d -p 3000:3000 --name ncm-api moefurina/ncm-api:latest
-
-
-// 或者
-docker run -d -p 3000:3000 moefurina/ncm-api:latest
-
-// 去掉或者设置相关的环境变量
-
-docker run -d -p 3000:3000 --name ncm-api -e http_proxy= -e https_proxy= -e no_proxy= -e HTTP_PROXY= -e HTTPS_PROXY= -e NO_PROXY= moefurina/ncm-api:latest
-
-// 或者
-docker run -d -p 3000:3000 -e http_proxy= -e https_proxy= -e no_proxy= -e HTTP_PROXY= -e HTTPS_PROXY= -e NO_PROXY= moefurina/ncm-api:latest
-```
-
-> 以下是自行 build docker 镜像方式
-
-```shell
-$ git clone https://github.com/NeteaseCloudMusicApiEnhanced/api-enhanced && cd api-enhanced
-
-$ sudo docker build . -t ncm-api
-
-$ sudo docker run -d -p 3000:3000 ncm-api
-```
-
-## 3. 环境变量
-
-| 变量名                        | 默认值                                  | 说明                                                 |
-|----------------------------|--------------------------------------|----------------------------------------------------|
-| **CORS_ALLOW_ORIGIN**      | `*`                                  | 允许跨域请求的域名。可填写单个源，或使用逗号分隔多个源（例如 `https://a.com,https://b.com`）。 |
-| **ENABLE_PROXY**           | `false`                              | 是否启用反向代理功能。                                        |
-| **PROXY_URL**              | `https://your-proxy-url.com/?proxy=` | 代理服务地址。仅当 `ENABLE_PROXY=true` 时生效。                 |
-| **ENABLE_RANDOM_CN_IP**    | `false`                              | 是否默认启用随机中国IP。启用后，所有请求默认使用随机中国IP，除非请求参数 `randomCNIP` 显式关闭。 |
-| **ENABLE_GENERAL_UNBLOCK** | `true`                               | 是否启用全局解灰（推荐开启）。开启后所有歌曲都尝试自动解锁。                     |
-| **ENABLE_FLAC**            | `true`                               | 是否启用无损音质（FLAC）。                                    |
-| **SELECT_MAX_BR**          | `false`                              | 启用无损音质时，是否选择最高码率音质。                                |
-| **FOLLOW_SOURCE_ORDER**    | `true`                               | 是否严格按照音源列表顺序进行匹配。                                  |
+| 页面 | 地址 |
+|------|------|
+| API 服务首页 | http://localhost:3000/ |
+| **meting 文档页** | http://localhost:3000/meting.html |
+| 听歌打卡示例 | http://localhost:3000/scrobble.html |
 
 ---
 
-### 4. 更新镜像
+## meting 兼容端点 `/meting`
 
-更新到最新版本：
+完全兼容 [injahow/meting-api](https://github.com/injahow/meting-api) 协议，APlayer / MetingJS 可直接对接，无需修改任何前端代码。
+
+### 在线测试示例
+
+```
+http://localhost:3000/meting/?type=url&id=33894312
+http://localhost:3000/meting/?type=url&id=416892104&br=2000      ← FLAC 无损
+http://localhost:3000/meting/?type=pic&id=33894312&cover=500
+http://localhost:3000/meting/?type=lrc&id=33894312              ← 含中文翻译合并
+http://localhost:3000/meting/?type=song&id=33894312
+http://localhost:3000/meting/?type=playlist&id=2619366284
+http://localhost:3000/meting/?type=search&id=Adele&limit=5
+```
+
+### 参数说明
+
+| 参数 | 说明 | 默认值 |
+|------|------|--------|
+| type | name · artist · url · pic · lrc · song · playlist · search | **必填** |
+| id | 歌曲/歌单 ID；type=search 时为搜索关键词 | **必填** |
+| server | 数据源（netease / tencent / xiami / kugou / baidu / kuwo） | netease（其他静默忽略） |
+| br | 音质（仅 type=url）：320 / 192 / 128 / 2000(flac) | 320 |
+| cover | 封面分辨率（仅 type=pic） | 300 |
+| limit | 搜索条数（type=search） | 30 |
+| page | 搜索页码（type=search） | 1 |
+| search_type | 平台搜索类型（type=search） | 1（单曲） |
+
+### APlayer / MetingJS 集成
+
+```html
+<script>
+  window.meting_api = 'http://你的域名:3000/meting/?server=:server&type=:type&id=:id&auth=:auth&r=:r'
+</script>
+<script src="https://cdn.jsdelivr.net/npm/meting@2/dist/Meting.min.js"></script>
+
+<meting-js server="netease" type="playlist" id="2619366284"></meting-js>
+```
+
+#### VIP 支持（nginx 反代示例）
+
+```nginx
+location /meting/ {
+    proxy_pass http://localhost:3000/meting/;
+    proxy_set_header Cookie "MUSIC_U=你的真实token";
+}
+```
+
+---
+
+## 灰色歌曲自动解灰
+
+歌曲因版权或 VIP 限制无法直接获取时，底层自动调用 matchID 走替代音源（酷我、咪咕、QQ 等），**无需任何额外配置**：
+
+```bash
+# 自动 302 重定向到可播放的替代音源 URL
+curl -I "http://localhost:3000/meting/?type=url&id=灰色歌曲ID"
+```
+
+---
+
+## VIP 解锁（原生端点）
+
+所有 ~400 个原生 API 端点均支持 VIP Cookie 透传：
+
+```bash
+curl -H "Cookie: MUSIC_U=你的token" \
+  "http://localhost:3000/song/url/v1?id=1385117201&level=lossless"
+```
+
+---
+
+## 调用统计
+
+实时暴露 GET /stats 端点，文档页和首页底部每 10 秒自动刷新：
+
+```json
+{
+  "api":   { "total_calls": 1234, "today_calls": 56 },
+  "meting": { "total_calls": 789,  "today_calls": 34 }
+}
+```
+
+- **api**：全部 API 请求（不含 /stats 自身）
+- **meting**：所有带 type+id 的 /meting 请求（不含文档页跳转）
+- 跨日自动重置 today_calls
+
+---
+
+## Docker 部署
 
 ```bash
 docker pull moefurina/ncm-api:latest
-docker stop ncm-api && docker rm ncm-api
-docker run -d -p 3000:3000 moefurina/ncm-api:latest
+docker run -d -p 3000:3000 --name ncm-api moefurina/ncm-api:latest
 ```
 
-## Vercel 一键部署
+---
 
-1. fork 本项目
-2. 在 Vercel 官网新建项目，导入 fork 的仓库
-3. 直接 Deploy
+## 环境变量
 
-## 腾讯云 Serverless 部署
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| PORT | 3000 | 服务端口 |
+| CORS_ALLOW_ORIGIN | * | 允许跨域请求的域名 |
+| ENABLE_PROXY | false | 是否启用反向代理 |
+| PROXY_URL | — | 代理服务地址（启用代理时） |
+| ENABLE_RANDOM_CN_IP | false | 是否默认启用随机中国 IP |
+| ENABLE_GENERAL_UNBLOCK | true | 是否启用全局自动解灰 |
+| ENABLE_FLAC | true | 是否启用无损音质 |
+| NETEASE_COOKIE | — | 默认网易云 Cookie |
 
-1. fork 本项目
-2. 在腾讯云 serverless 控制台新建 Web 应用，选择 Express 框架
-3. 代码仓库选择 fork 的项目，启动文件填写：
-   ```bash
-   #!/bin/bash
-   export PORT=9000
-   /var/lang/node16/bin/node app.js
-   ```
-4. 完成部署后，访问 API 网关的 URL 即可
+完整配置示例见 .env.prod.example。
 
-## Node.js 方式调用
-
-支持直接在 Node.js 项目中引入和调用，返回 Promise：
-
-```js
-const {
-  login_cellphone,
-  user_cloud,
-} = require('@neteasecloudmusicapienhanced/api')
-async function main() {
-  const result = await login_cellphone({ phone: '手机号', password: '密码' })
-  console.log(result)
-  const result2 = await user_cloud({ cookie: result.body.cookie })
-  console.log(result2.body)
-}
-main()
-```
-
-## TypeScript 支持
-
-```ts
-import { banner } from '@neteasecloudmusicapienhanced/api'
-banner({ type: 0 }).then((res) => console.log(res))
-```
+---
 
 ## 单元测试
 
@@ -198,56 +180,52 @@ banner({ type: 0 }).then((res) => console.log(res))
 pnpm test
 ```
 
+---
+
+## 项目结构
+
+```
+module/
+  meting.js          # meting 兼容端点（/meting）
+  stats.js            # 调用统计端点（/stats）
+  scrobble.js        # 听歌打卡（明文版）
+  scrobble_v1.js     # 听歌打卡（NCBL 加密版）
+util/
+  meting.js          # LRC 合并 / URL 构建 / 并发限流
+  stats.js           # 同步原子计数器
+  ncbl.js            # NCBL 加密工具
+public/
+  index.html         # API 服务首页
+  meting.html       # meting 文档页（含全部测试链接）
+  scrobble.html      # 听歌打卡示例
+  qrlogin-nocookie.html  # 无 cookie QR 登录
+server.js             # Express 服务器（路由 / 中间件 / 自动加载）
+main.js               # npm SDK 入口
+app.js               # CLI 启动入口
+```
+
+---
+
 ## 主要功能特性
 
 - 登录/注册/验证码
 - 用户信息、歌单、动态、播放记录
 - 歌曲、专辑、歌手、MV、歌词、评论、排行榜
 - 搜索、推荐、私人 FM、签到、云盘
-- 歌曲解锁（解灰）
+- 歌曲解锁（解灰）：自动走替代音源
+- 听歌打卡：/scrobble（明文）、/scrobble/v1（NCBL 加密）
 
-## 贡献与社区
+---
 
-- 欢迎提交 PR、Issue 参与维护
-- 要贡献新接口, 请参考[这篇文章](https://www.focalors.ltd/post/how-to-contribute-ncm-api)
+## 致谢
 
-### 致谢
+- 原作者 [Binaryify/NeteaseCloudMusicApi](https://github.com/binaryify/NeteaseCloudMusicApi) 为本项目基础
+- [MoeFurina/NeteaseCloudMusicApiEnhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced) 提供持续维护与增强
+- [metowolf/Meting](https://github.com/metowolf/Meting) 提供 meting 协议参考
+- [injahow/meting-api](https://github.com/injahow/meting-api) 提供 meting 协议实现参考
 
-原作者 [Binaryify/NeteaseCloudMusicApi](https://github.com/binaryify/NeteaseCloudMusicApi) 项目为本项目基础 (该项目在`npmjs`网站上仍持续维护, 但 github 仓库已不再更新)
-
-感谢大佬们为逆向eapi, weapi, xeapi等加密算法所做的贡献
-
-项目参考:
-
-[trazyn/ieaseMusic](https://github.com/trazyn/ieaseMusic)
-
-[listen1/listen1_chrome_extension](https://github.com/listen1/listen1_chrome_extension)
-
-[chaunsin/netease-cloud-music](https://github.com/chaunsin/netease-cloud-music)
-
-[folltoshe/netease-report-listen-song](https://github.com/folltoshe/netease-report-listen-song)
-
-### SDK 生态
-
-| 语言     | 作者                                          | 地址                                                                                       | 类型  |
-|--------|---------------------------------------------|------------------------------------------------------------------------------------------|-----|
-| Java   | [JackuXL](https://github.com/JackuXL)       | [NeteaseCloudMusicApi-SDK](https://github.com/JackuXL/NeteaseCloudMusicApi-SDK)          | 第三方 |
-| Java   | [1015770492](https://github.com/1015770492) | [yumbo-music-utils](https://github.com/1015770492/yumbo-music-utils)      | 第三方 |
-| Python | [盧瞳](https://github.com/2061360308)         | [NeteaseCloudMusic_PythonSDK](https://github.com/2061360308/NeteaseCloudMusic_PythonSDK) | 第三方 |
-| Swift  | [Lincb522](https://github.com/Lincb522)  | [NeteaseCloudMusicApi-Swift](https://github.com/Lincb522/NeteaseCloudMusicAPI-Swift)     | 第三方 |
-| Rust   | [SPlayer-Dev](https://github.com/splayer-dev)  | [ncm-api-rs](https://github.com/SPlayer-Dev/ncm-api-rs)     | 第三方 |
-
-
-### 依赖此项目的优秀开源项目
-
-- [qier2222/YesPlayMusic](https://github.com/qier222/YesPlayMusic)
-
-- [MaigoLabs/amaoke.app](https://github.com/MaigoLabs/amaoke.app)
-
-- [Yueby/music-together](https://github.com/Yueby/music-together)
-
-- [chthollyphlie/folia-major](https://github.com/chthollyphile/folia-major)
+---
 
 ## License
 
-[MIT License](https://github.com/MoeFurina/NeteaseCloudMusicApiEnhanced/blob/main/LICENSE)
+MIT ./LICENSE

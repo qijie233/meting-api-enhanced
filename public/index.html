@@ -49,6 +49,15 @@
     footer.site-footer { margin-top: 24px; padding-top: 12px; border-top: 1px solid var(--border); color: var(--muted); text-align: center; }
     footer.site-footer a { color: var(--fg); text-decoration: none; transition: color 0.2s ease; }
     footer.site-footer a:hover { color: var(--accent); }
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    @media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr; } }
+    .stat-card { background: #fafafa; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; text-align: center; transition: transform 0.15s; }
+    .stat-card:hover { transform: translateY(-2px); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06); }
+    .stat-card.api { border-top: 3px solid #333; }
+    .stat-card.meting { border-top: 3px solid #c4302b; }
+    .stat-card .label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+    .stat-card .value { font-size: 24px; font-weight: 600; color: var(--fg); font-variant-numeric: tabular-nums; }
+    .refresh-tip { text-align: center; font-size: 12px; color: var(--muted); margin-top: 10px; }
   </style>
 </head>
 <body>
@@ -82,6 +91,43 @@
     </section>
 
     <section class="block">
+      <h2>🎵 meting 兼容层 <span class="badge">新</span></h2>
+      <p>完全兼容 <a href="https://github.com/injahow/meting-api" target="_blank">injahow/meting-api</a> 协议 —— APlayer / MetingJS 客户端可直接指向 <code>/meting</code> 而无需修改前端代码。支持 VIP（<code>Cookie: MUSIC_U=xxx</code>）和灰色歌曲自动解灰。</p>
+      <div class="kvs">
+        <div>server</div><div>数据源（<code>netease</code> / <code>tencent</code> / <code>xiami</code> / <code>kugou</code> / <code>baidu</code> / <code>kuwo</code>）—— 当前仅 netease，其他平台静默忽略</div>
+        <div>type</div><div><code>name</code> 歌曲名 · <code>artist</code> 歌手 · <code>url</code> 播放链接(302) · <code>pic</code> 封面(302) · <code>lrc</code> 歌词(含中文翻译) · <code>song</code> 单曲JSON · <code>playlist</code> 歌单JSON · <code>search</code> 搜索JSON</div>
+        <div>id</div><div>歌曲/歌单 ID；<code>type=search</code> 时为搜索关键词</div>
+        <div>br</div><div>音质（<code>type=url</code> 专用，默认 <code>320</code>，可选 <code>2000</code>(flac)/<code>192</code>/<code>128</code>）</div>
+        <div>cover</div><div>封面分辨率（<code>type=pic</code> 专用，默认 <code>300</code>，兼容旧参数 <code>size</code>）</div>
+        <div>limit</div><div>搜索条数（<code>type=search</code> 专用，默认 <code>30</code>）</div>
+        <div>page</div><div>搜索页码（<code>type=search</code> 专用，默认 <code>1</code>）</div>
+        <div>VIP</div><div>请求头 <code>Cookie: MUSIC_U=你的token</code> 即可播放 VIP / 付费歌曲</div>
+      </div>
+      <h2 style="font-size:15px;margin-top:16px;">在线测试</h2>
+      <ul class="links">
+        <li><a href="/meting/?type=url&id=33894312" target="_blank">获取播放链接（302 重定向）: <code>GET /meting/?type=url&id=33894312</code></a></li>
+        <li><a href="/meting/?type=url&id=416892104&br=2000" target="_blank">FLAC 无损音质测试: <code>GET /meting/?type=url&id=416892104&br=2000</code></a></li>
+        <li><a href="/meting/?type=url&id=1385117201" target="_blank">VIP 歌曲测试（无 cookie 应走解灰）: <code>GET /meting/?type=url&id=1385117201</code></a></li>
+        <li><a href="/meting/?type=pic&id=33894312" target="_blank">封面图（302 重定向）: <code>GET /meting/?type=pic&id=33894312</code></a></li>
+        <li><a href="/meting/?type=pic&id=416892104&cover=500" target="_blank">封面 500x500: <code>GET /meting/?type=pic&id=416892104&cover=500</code></a></li>
+        <li><a href="/meting/?type=lrc&id=33894312" target="_blank">歌词（含中文翻译合并）: <code>GET /meting/?type=lrc&id=33894312</code></a></li>
+        <li><a href="/meting/?type=name&id=33894312" target="_blank">歌曲名: <code>GET /meting/?type=name&id=33894312</code></a></li>
+        <li><a href="/meting/?type=artist&id=33894312" target="_blank">歌手: <code>GET /meting/?type=artist&id=33894312</code></a></li>
+        <li><a href="/meting/?type=song&id=33894312&br=320" target="_blank">单曲 JSON: <code>GET /meting/?type=song&id=33894312</code></a></li>
+        <li><a href="/meting/?type=playlist&id=2619366284" target="_blank">歌单 JSON: <code>GET /meting/?type=playlist&id=2619366284</code></a></li>
+        <li><a href="/meting/?type=search&id=%E5%91%A8%E6%9D%B0%E4%BC%A6&limit=5" target="_blank">搜索: <code>GET /meting/?type=search&id=周杰伦&limit=5</code></a></li>
+        <li><a href="/meting/?type=song&id=33894312&server=tencent" target="_blank">server 参数静默忽略: <code>GET /meting/?type=song&id=33894312&server=tencent</code></a></li>
+      </ul>
+      <h2 style="font-size:15px;margin-top:16px;">APlayer 集成示例</h2>
+      <pre><code>&lt;script&gt;
+window.meting_api = 'http(s)://你的域名:3002/meting/?server=:server&amp;type=:type&amp;id=:id&amp;auth=:auth&amp;r=:r'
+&lt;/script&gt;
+&lt;meting-js server="netease" type="playlist" id="2619366284"&gt;&lt;/meting-js&gt;</code></pre>
+      <p style="margin-top:10px;color:var(--muted);font-size:13px;">如需 VIP 支持：在 nginx 等反代层为 <code>/meting/</code> 注入 <code>Cookie: MUSIC_U=你的token</code> 即可。</p>
+      <p style="margin-top:6px;font-size:13px;">📖 查看 <a href="/meting.html">完整 meting 文档页（参数说明 + 全部测试链接）</a></p>
+    </section>
+
+    <section class="block">
       <h2>调试部分</h2>
       <pre><code>curl -s {origin}/inner/version
 curl -s {origin}/search?keywords=网易云</code></pre>
@@ -96,8 +142,32 @@ curl -s {origin}/search?keywords=网易云</code></pre>
         <a href="/listen_together_host.html">一起听示例</a> ·
         <a href="/playlist_cover_update.html">更新歌单封面示例</a> ·
         <a href="/avatar_update.html">头像更新示例</a> ·
-        <a href="/scrobble.html">听歌打卡示例</a>
+        <a href="/scrobble.html">听歌打卡示例</a> ·
+        <a href="/qrlogin-nocookie.html">无 cookie QR 登录示例</a>
       </div>
+    </section>
+
+    <section class="block">
+      <h2>📊 调用统计</h2>
+      <div class="stats-grid">
+        <div class="stat-card api">
+          <div class="label">api-enhanced 总调用</div>
+          <div class="value" id="api-total">—</div>
+        </div>
+        <div class="stat-card api">
+          <div class="label">api-enhanced 今日调用</div>
+          <div class="value" id="api-today">—</div>
+        </div>
+        <div class="stat-card meting">
+          <div class="label">meting 总调用</div>
+          <div class="value" id="meting-total">—</div>
+        </div>
+        <div class="stat-card meting">
+          <div class="label">meting 今日调用</div>
+          <div class="value" id="meting-today">—</div>
+        </div>
+      </div>
+      <p class="refresh-tip">每 10 秒自动刷新 · 数据来源 <code>GET /stats</code></p>
     </section>
 
     <footer class="site-footer">
@@ -121,6 +191,22 @@ curl -s {origin}/search?keywords=网易云</code></pre>
         })
         .catch(function () {});
     });
+
+    // 调用统计：每 10 秒从 /stats 拉取一次
+    async function refreshStats() {
+      try {
+        var res = await fetch('/stats');
+        if (!res.ok) return;
+        var data = await res.json();
+        var fmt = function (n) { return (n || 0).toLocaleString(); };
+        document.getElementById('api-total').textContent = fmt(data.api && data.api.total_calls);
+        document.getElementById('api-today').textContent = fmt(data.api && data.api.today_calls);
+        document.getElementById('meting-total').textContent = fmt(data.meting && data.meting.total_calls);
+        document.getElementById('meting-today').textContent = fmt(data.meting && data.meting.today_calls);
+      } catch (e) {}
+    }
+    refreshStats();
+    setInterval(refreshStats, 10000);
   </script>
 </body>
 </html>
