@@ -2,9 +2,9 @@
 
 **完全兼容 meting 协议的网易云音乐 API** — 基于 [api-enhanced](https://github.com/neteasecloudmusicapienhanced/api-enhanced)，新增 meting 兼容端点、VIP 解锁、自动解灰、调用统计等增强功能。
 
-[![Node.js](https://img.shields.io/badge/Node.js-%3E%3D18-green?style=flat-square&logo=node.js)](https://nodejs.org)
-[![TypeScript](https://img.shields.io/badge/TypeScript-ready-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](./LICENSE)
+[![Node.js 18+](https://img.shields.io/badge/Node.js-18%2B-green?style=flat-square&logo=node.js)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Ready-blue?style=flat-square&logo=typescript)](https://www.typescriptlang.org)
+[![MIT](https://img.shields.io/badge/License-MIT-yellow?style=flat-square)](./LICENSE)
 
 ---
 
@@ -78,7 +78,7 @@ http://localhost:3002/meting/?type=search&id=Adele&limit=5
 ### 参数说明
 
 | 参数 | 说明 | 默认值 |
-|------|------|--------|
+|------|--------|--------|
 | `type` | `name` · `artist` · `url` · `pic` · `lrc` · `song` · `playlist` · `search` | **必填** |
 | `id` | 歌曲/歌单 ID；`type=search` 时为搜索关键词 | **必填** |
 | `server` | 数据源（`netease` · `tencent` · `xiami` · `kugou` · `baidu` · `kuwo`） | `netease`（其他静默忽略） |
@@ -156,7 +156,7 @@ docker pull moefurina/ncm-api:latest
 docker run -d -p 3000:3000 --name ncm-api moefurina/ncm-api:latest
 ```
 
-> 注意：Docker 默认端口 3000，需在启动命令中覆盖 `PORT` 环境变量或修改 Dockerfile。
+> 注意：Docker 镜像默认端口 3000，如需改为 3002，启动命令中加 `-e PORT=3002` 覆盖。
 
 ---
 
@@ -191,16 +191,16 @@ pnpm test
 module/
   meting.js          # meting 兼容端点（/meting）
   stats.js            # 调用统计端点（/stats）
-  scrobble.js        # 听歌打卡（明文版）
-  scrobble_v1.js     # 听歌打卡（NCBL 加密版）
+  scrobble.js        # 听歌打卡明文版）
+  scrobble_v1.js     # 听歌打卡 NCBL 加密版）
 util/
   meting.js          # LRC 合并 / URL 构建 / 并发限流
   stats.js           # 同步原子计数器
   ncbl.js            # NCBL 加密工具
 public/
   index.html         # API 服务首页（含 meting 区块 + 统计卡片）
-  meting.html       # meting 文档页（含全部测试链接）
-  scrobble.html     # 听歌打卡示例
+  meting.html        # meting 文档页（含全部测试链接）
+  scrobble.html       # 听歌打卡示例
   qrlogin-nocookie.html  # 无 cookie QR 登录
 server.js             # Express 服务器（路由 / 中间件 / 自动加载）
 main.js               # npm SDK 入口
