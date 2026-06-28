@@ -99,15 +99,6 @@ http://localhost:3002/meting/?type=search&id=Adele&limit=5
 <meting-js server="netease" type="playlist" id="2619366284"></meting-js>
 ```
 
-#### VIP 支持（nginx 反代示例）
-
-```nginx
-location /meting/ {
-    proxy_pass http://localhost:3002/meting/;
-    proxy_set_header Cookie "MUSIC_U=你的真实token";
-}
-```
-
 ---
 
 ## 灰色歌曲自动解灰
