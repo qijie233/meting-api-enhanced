@@ -162,13 +162,21 @@ docker run -d -p 3000:3000 --name ncm-api moefurina/ncm-api:latest
 | `ENABLE_RANDOM_CN_IP` | `false` | 是否默认启用随机中国 IP |
 | `ENABLE_GENERAL_UNBLOCK` | `true` | 是否启用全局自动解灰 |
 | `ENABLE_FLAC` | `true` | 是否启用无损音质 |
-| `NETEASE_COOKIE` | — | 默认网易云 Cookie |
+| `NETEASE_COOKIE` | — | 默认网易云 Cookie（详见下节） |
+| `DEBUG_COOKIE` | — | 设为 `1` 打印 cookie 解析/对象→字符串日志 |
+| `DEBUG_URL` | — | 设为 `1` 打印 NCM `song/enhance/player/url` 请求与响应日志 |
+| `DEBUG_METING` | — | 设为 `1` 打印 `/meting` 端点内部流向日志 |
 
 完整配置示例见 `.env.prod.example`。
 
 ### Cookie 配置（解锁 VIP 歌曲）
 
-本 API 支持通过 `MUSIC_U` cookie 解锁 VIP / 付费歌曲。有两种配置方式，**任选其一**即可。
+本 API 支持通过 `MUSIC_U` cookie 解锁 VIP / 付费歌曲。Cookie 优先级如下：
+
+1. **请求方主动传递**：浏览器/调用方在 `Cookie` 请求头里带 `MUSIC_U=...`（APlayer/MetingJS 透传用户的网易云登录态）
+2. **服务端 `.env` 兜底**：当请求方**未携带** cookie 时（典型场景：`curl`、自建脚本、APlayer 未登录用户），服务会用 `NETEASE_COOKIE` 环境变量作为默认账号解锁 VIP
+
+> 💡 **简言之**：要让 API **默认对所有调用方**解锁 VIP，必须把 MUSIC_U 填进 `.env`；只填 MUSIC_U 给浏览器是不够的。
 
 #### 方式一：直接配置 .env（推荐）
 
