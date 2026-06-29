@@ -23,6 +23,7 @@ const {
   formatArtist,
   mergeLyric,
   buildMetingUrl,
+  metingBrToNcmBr,
   pMap,
 } = require('../util/meting')
 
@@ -49,9 +50,18 @@ const PARALLEL_LIMIT = 8
  * 返回替代音源 URL 字符串，失败返回空串。
  */
 async function unblockUrl(songId) {
+  if (process.env.DEBUG_METING) {
+    console.log('[DEBUG unblockUrl] called for songId:', songId)
+  }
   try {
     const res = await songUrlMatchModule({ id: songId })
+    if (process.env.DEBUG_METING) {
+      console.log('[DEBUG unblockUrl] response:', JSON.stringify(res).substring(0, 200))
+    }
     const url = res && res.body && res.body.data
+    if (process.env.DEBUG_METING) {
+      console.log('[DEBUG unblockUrl] result:', typeof url, url ? url.substring(0, 100) : 'null')
+    }
     return typeof url === 'string' ? url : ''
   } catch (e) {
     logger.warn('meting unblock failed for', songId, e && e.message)
@@ -62,14 +72,14 @@ async function unblockUrl(songId) {
 /**
  * 判断 NCM 返回的歌曲项是否需要解灰：
  * - url 为空
- * - fee 为 1（VIP）或 4（专辑购买）
- * - freeTrialInfo 非空
+ * - freeTrialInfo 非空（免费试唱）
+ * 注意：fee 为 1/4 但有有效 url 时不需要解灰（cookie 足够）
  */
 function needsUnblock(songItem) {
   if (!songItem) return true
   if (!songItem.url) return true
-  if ([1, 4].includes(songItem.fee)) return true
   if (songItem.freeTrialInfo) return true
+  // 有 url 且不是 free trial，即使 fee 为 1/4 也不需要解灰
   return false
 }
 
@@ -85,9 +95,10 @@ function needsUnblock(songItem) {
 async function buildSongItem(song, opts, query, request) {
   const songId = song.id
   // 并行拉取 url + lyric（detail 已经传入，无需再拉）
+  // br: meting 协议用 kbps，NCM 接口要 bps（否则 br=320 被丢弃，触发 30s 预览兜底）
   const [urlItem, lyricRes] = await Promise.all([
     songUrlModule(
-      { id: String(songId), br: opts.br, cookie: query.cookie },
+      { id: String(songId), br: metingBrToNcmBr(opts.br), cookie: query.cookie },
       request,
     )
       .then(
@@ -109,9 +120,21 @@ async function buildSongItem(song, opts, query, request) {
 
   // 自动解灰：url 不可用就试替代音源
   let finalUrl = ''
+  if (process.env.DEBUG_METING) {
+    console.log('[DEBUG meting] songId:', songId, 'urlItem:', urlItem ? {url: urlItem.url ? 'exists' : 'null', fee: urlItem.fee, time: urlItem.time, freeTrialInfo: urlItem.freeTrialInfo} : 'null')
+  }
   if (needsUnblock(urlItem)) {
+    if (process.env.DEBUG_METING) {
+      console.log('[DEBUG meting] needsUnblock=true, calling unblockUrl')
+    }
     finalUrl = await unblockUrl(songId)
+    if (process.env.DEBUG_METING) {
+      console.log('[DEBUG meting] unblockUrl result:', finalUrl ? 'has url' : 'empty')
+    }
   } else if (urlItem) {
+    if (process.env.DEBUG_METING) {
+      console.log('[DEBUG meting] needsUnblock=false, using urlItem.url')
+    }
     finalUrl = urlItem.url || ''
   }
 
@@ -215,6 +238,9 @@ async function handleSearch(query, request, opts) {
 }
 
 module.exports = async (query, request) => {
+  if (process.env.DEBUG_METING) {
+    console.log('[DEBUG meting module] START, type:', query.type, 'id:', query.id)
+  }
   const type = query.type
   const id = query.id
 
@@ -272,15 +298,30 @@ module.exports = async (query, request) => {
       }
 
       case 'url': {
+        if (process.env.DEBUG_METING) {
+          console.log('[DEBUG handleUrl] id:', id, 'br:', opts.br, 'brNcm:', metingBrToNcmBr(opts.br), 'cookie exists:', !!query.cookie)
+        }
         const urlRes = await songUrlModule(
-          { id: String(id), br: opts.br, cookie: query.cookie },
+          { id: String(id), br: metingBrToNcmBr(opts.br), cookie: query.cookie },
           request,
         )
         let dataItem =
           (urlRes.body && urlRes.body.data && urlRes.body.data[0]) || null
+        if (process.env.DEBUG_METING) {
+          console.log('[DEBUG handleUrl] dataItem:', dataItem ? {url: dataItem.url ? 'exists' : 'null', fee: dataItem.fee, time: dataItem.time, freeTrialInfo: dataItem.freeTrialInfo} : 'null')
+        }
         let finalUrl = dataItem && dataItem.url
+        if (process.env.DEBUG_METING) {
+          console.log('[DEBUG handleUrl] needsUnblock:', needsUnblock(dataItem), 'finalUrl before unblock:', !!finalUrl)
+        }
         if (!finalUrl || needsUnblock(dataItem)) {
+          if (process.env.DEBUG_METING) {
+            console.log('[DEBUG handleUrl] calling unblockUrl')
+          }
           finalUrl = await unblockUrl(id)
+          if (process.env.DEBUG_METING) {
+            console.log('[DEBUG handleUrl] unblockUrl returned:', finalUrl ? 'url exists' : 'empty')
+          }
         }
         if (!finalUrl) {
           return {

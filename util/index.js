@@ -108,10 +108,17 @@ module.exports = {
     const cookieKeys = keys(cookie)
     const result = []
 
+    // DEBUG
+    if (process.env.DEBUG_COOKIE && cookie.MUSIC_U && cookie.MUSIC_U.length > 100) {
+      console.log('[DEBUG cookieObjToString] MUSIC_U exists, WM_TID:', cookie.WM_TID ? cookie.WM_TID.substring(0, 50) : 'missing')
+    }
+
     // 优化：使用for循环和预分配数组
+    // 注意：cookie 值已经是 URL-encoded 的原始格式，不需要再次编码
     for (let i = 0, len = cookieKeys.length; i < len; i++) {
       const key = cookieKeys[i]
-      result[i] = `${encode(key)}=${encode(cookie[key])}`
+      // cookie key 需要编码，value 不需要（已经是原始格式）
+      result[i] = `${encode(key)}=${cookie[key]}`
     }
 
     return result.join('; ')

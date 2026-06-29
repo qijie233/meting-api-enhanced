@@ -142,7 +142,7 @@ const processCookieObject = (cookie, uri) => {
     WNMCID: cookie.WNMCID || WNMCID,
     WEVNSM: cookie.WEVNSM || '1.0.0',
     osver: cookie.osver || os.osver,
-    deviceId: cookie.deviceId || global.deviceId,
+    deviceId: cookie.deviceId || cookie.sDeviceId || global.deviceId,
     os: cookie.os || os.os,
     channel: cookie.channel || os.channel,
     appver: cookie.appver || os.appver,
@@ -153,7 +153,18 @@ const processCookieObject = (cookie, uri) => {
   }
 
   if (!processedCookie.MUSIC_U) {
-    processedCookie.MUSIC_A = processedCookie.MUSIC_A || anonymous_token
+    // 如果 cookie 中没有 MUSIC_U，尝试从环境变量获取
+    const envCookie = process.env.NETEASE_COOKIE
+    if (envCookie) {
+      const { cookieToJson } = require('./index')
+      const parsed = cookieToJson(envCookie)
+      if (parsed.MUSIC_U) {
+        processedCookie.MUSIC_U = parsed.MUSIC_U
+      }
+    }
+    if (!processedCookie.MUSIC_U) {
+      processedCookie.MUSIC_A = processedCookie.MUSIC_A || anonymous_token
+    }
   }
 
   return processedCookie
@@ -201,6 +212,17 @@ const createRequest = (uri, data, options) => {
       cookie = processCookieObject(cookie, uri)
       headers['Cookie'] = cookieObjToString(cookie)
     }
+    // DEBUG: print raw NETEASE_COOKIE for song_url
+    if (process.env.DEBUG_URL) {
+      console.log('[DEBUG request] uri:', uri, 'crypto:', options.crypto, 'cookie has MUSIC_U:', headers['Cookie'] ? headers['Cookie'].includes('MUSIC_U=') : false)
+      if (uri.indexOf('song/enhance/player/url') !== -1) {
+        console.log('[DEBUG request] raw NETEASE_COOKIE:', process.env.NETEASE_COOKIE ? process.env.NETEASE_COOKIE.substring(0, 100) : 'MISSING')
+        console.log('[DEBUG request] parsed WM_TID:', cookie.WM_TID ? cookie.WM_TID.substring(0, 50) : 'missing')
+        console.log('[DEBUG request] parsed sDeviceId:', cookie.sDeviceId ? cookie.sDeviceId.substring(0, 30) : 'missing')
+        console.log('[DEBUG request] parsed deviceId:', cookie.deviceId ? cookie.deviceId.substring(0, 30) : 'missing')
+        console.log('[DEBUG weapi] after processCookieObject, MUSIC_U in cookie:', cookie.MUSIC_U ? 'exists len=' + cookie.MUSIC_U.length : 'MISSING')
+      }
+    }
     let url = ''
     let encryptData = ''
     let crypto = options.crypto
@@ -221,13 +243,23 @@ const createRequest = (uri, data, options) => {
           : ENCRYPT_RESPONSE,
     )
     // 根据加密方式处理
+    if (process.env.DEBUG_URL) {
+      console.log('[DEBUG request] crypto switch, crypto:', crypto, 'uri:', uri)
+    }
     switch (crypto) {
       case 'weapi':
+        if (process.env.DEBUG_URL) {
+          console.log('[DEBUG weapi] START, domain:', options.domain, 'DOMAIN:', DOMAIN)
+        }
         headers['Referer'] = options.domain || DOMAIN
         headers['User-Agent'] = options.ua || chooseUserAgent('weapi')
         data.csrf_token = csrfToken
         encryptData = encrypt.weapi(data)
         url = (options.domain || DOMAIN) + '/weapi/' + uri.substr(5)
+        if (process.env.DEBUG_URL) {
+          console.log('[DEBUG weapi] FINAL url:', url)
+          console.log('[DEBUG weapi] FINAL cookie:', headers['Cookie'] ? headers['Cookie'].substring(0, 100) + '...(len=' + headers['Cookie'].length + ')' : 'null')
+        }
         break
 
       case 'linuxapi':
@@ -344,12 +376,30 @@ const createRequest = (uri, data, options) => {
       httpsAgent: createHttpsAgent(),
     }
 
+    // DEBUG: print what we're sending
+    if (process.env.DEBUG_URL && uri.indexOf('song/enhance/player/url') !== -1) {
+      console.log('[DEBUG weapi sending] full cookie:', headers['Cookie'])
+      console.log('[DEBUG weapi sending] User-Agent:', headers['User-Agent'])
+    }
+
     // 使用返回值加密
     const use_e_r = (crypto === 'eapi' || crypto === 'weapi') && data.e_r
     const use_xeapi = crypto === 'xeapi'
     if (use_e_r || use_xeapi) {
       settings.encoding = null
       settings.responseType = 'arraybuffer'
+    }
+    // DEBUG: for song_url
+    if (process.env.DEBUG_URL && uri.indexOf('song/enhance/player/url') !== -1) {
+      console.log('[DEBUG weapi] use_e_r:', use_e_r, 'use_xeapi:', use_xeapi)
+      console.log('[DEBUG weapi] data.e_r:', data.e_r)
+      console.log('[DEBUG weapi] final url being requested:', url)
+      console.log('[DEBUG weapi] final headers.Cookie length:', headers.Cookie ? headers.Cookie.length : 0)
+      // Extract and print MUSIC_U value
+      if (headers.Cookie) {
+        const musicU = headers.Cookie.split(';').find(s => s.trim().startsWith('MUSIC_U='));
+        console.log('[DEBUG weapi] MUSIC_U value:', musicU ? musicU.split('=')[1].substring(0, 30) + '...' : 'NOT FOUND');
+      }
     }
 
     // 代理处理
@@ -387,14 +437,28 @@ const createRequest = (uri, data, options) => {
       settings.proxy = false
     }
     // console.log(settings.headers);
+    if (process.env.DEBUG_URL) {
+      console.log('[DEBUG axios] about to make request, url:', settings.url ? settings.url.substring(0, 80) : 'unknown')
+    }
     axios(settings)
       .then((res) => {
         const body = res.data
+        // DEBUG: for song_url
+        if (process.env.DEBUG_URL && uri.indexOf('song/enhance/player/url') !== -1) {
+          console.log('[DEBUG weapi raw response] full body:', JSON.stringify(body).substring(0, 500))
+          console.log('[DEBUG weapi response status]:', res.status)
+          console.log('[DEBUG weapi response headers]:', JSON.stringify(res.headers).substring(0, 200))
+        }
         answer.cookie = (res.headers['set-cookie'] || []).map((x) =>
           x.replace(/\s*Domain=[^(;|$)]+;*/, ''),
         )
 
         // debug: 统一注释块，需要时取消注释查看请求/返回的原始密文
+
+        // DEBUG: for song_url
+        if (process.env.DEBUG_URL && uri.indexOf('song/enhance/player/url') !== -1) {
+          console.log('[DEBUG weapi raw body] type:', typeof body, 'isBuffer:', Buffer.isBuffer(body))
+        }
 
         // logger.debug(`[${crypto}]`, uri)
         // logger.debug(`[${crypto}] encrypted data:`, JSON.stringify(encryptData))
@@ -420,6 +484,11 @@ const createRequest = (uri, data, options) => {
           } else {
             answer.body =
               typeof body === 'object' ? body : parse(body.toString())
+          }
+
+          // DEBUG: print response for weapi
+          if (process.env.DEBUG_URL && uri.indexOf('song/enhance/player/url') !== -1) {
+            console.log('[DEBUG weapi response] code:', answer.body.code, 'data[0].url:', answer.body.data ? (answer.body.data[0] ? answer.body.data[0].url ? 'exists' : 'null' : 'no data') : 'no data array')
           }
 
           if (answer.body.code) {

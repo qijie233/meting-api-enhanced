@@ -9,7 +9,7 @@ module.exports = async (query, request) => {
   const res = await request(
     `/api/song/enhance/player/url`,
     data,
-    createOption(query),
+    createOption(query, 'weapi'),
   )
   // 根据id排序
   const result = res.body.data

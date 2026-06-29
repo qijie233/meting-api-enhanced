@@ -101,6 +101,32 @@ function buildMetingUrl(type, songId, server, opts) {
 }
 
 /**
+ * meting 协议 br (kbps) → NCM /api/song/enhance/player/url br (bps)。
+ *
+ * meting 协议：2000=FLAC, 320/192/128 = kbps
+ * NCM 实际接口：br 必须为 bps（320000/192000/128000/999000），
+ *   否则 NCM 视为无效，返回 data: null，触发后续 unblock 兑底 → 30s 预览。
+ *
+ * @param {number|string} br  meting 协议传入的音质枚举（kbps 或 2000=flac）
+ * @returns {number} NCM 接受的 bps 值；未知 / 缺省 → 320000
+ */
+function metingBrToNcmBr(br) {
+  const n = parseInt(br, 10)
+  switch (n) {
+    case 2000:
+      return 999000
+    case 320:
+      return 320000
+    case 192:
+      return 192000
+    case 128:
+      return 128000
+    default:
+      return 320000
+  }
+}
+
+/**
  * 简单并发限制：对异步任务数组，最多同时执行 limit 个。
  * 用于 type=playlist/type=search 时控制 N+1 请求的并发度。
  */
@@ -129,6 +155,7 @@ module.exports = {
   formatArtist,
   mergeLyric,
   buildMetingUrl,
+  metingBrToNcmBr,
   pMap,
   EMPTY_LRC_FALLBACK,
 }
