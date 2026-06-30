@@ -12,6 +12,12 @@ const decode = require('safe-decode-uri-component')
 const logger = require('./util/logger.js')
 const { APP_CONF } = require('./util/config.json')
 const stats = require('./util/stats')
+const { createIpLimiter } = require('./util/ipLimit')
+
+// /search 是 NCM 最容易触发"操作频繁"的端点（IP + 账号指纹限流）。
+// 在此按 IP 加一层本地限流，避免单 IP 把 NCM 打爆后连累所有用户。
+// 配置：每 IP 每 60 秒最多 30 次搜索请求。
+const searchLimiter = createIpLimiter({ windowMs: 60 * 1000, max: 30 })
 
 /**
  * The version check result.
@@ -321,7 +327,12 @@ async function constructServer(moduleDefs) {
 
   for (const moduleDef of moduleDefinitions) {
     // Register the route.
-    app.all(moduleDef.route, async (req, res) => {
+    // 部分高频触发 NCM 风控的端点（/search）加 IP 限流中间件。
+    const routeMiddlewares = []
+    if (moduleDef.identifier === 'search') {
+      routeMiddlewares.push(searchLimiter)
+    }
+    app.all(moduleDef.route, ...routeMiddlewares, async (req, res) => {
       ;[req.query, req.body].forEach((item) => {
         // item may be undefined (some environments / middlewares).
         // Guard access to avoid "Cannot read properties of undefined (reading 'cookie')".
@@ -421,6 +432,16 @@ async function constructServer(moduleDefs) {
           return
         }
 
+        // NCM 业务码 405 = "操作频繁，请稍候再试"，翻译为 HTTP 429 让客户端
+        // 能正确识别这是限流（而非 Method Not Allowed），并支持 Retry-After。
+        if (
+          moduleResponse.body &&
+          Number(moduleResponse.body.code) === 405
+        ) {
+          res.set('Retry-After', '30')
+          return res.status(429).send(moduleResponse.body)
+        }
+
         res.status(moduleResponse.status).send(moduleResponse.body)
       } catch (/** @type {*} */ moduleResponse) {
         logger.error(`${decode(req.originalUrl)}`, {
@@ -439,6 +460,12 @@ async function constructServer(moduleDefs) {
           moduleResponse.body.msg = '需要登录'
         if (!query.noCookie) {
           res.append('Set-Cookie', moduleResponse.cookie)
+        }
+
+        // 同样的翻译：catch 分支里 NCM 抛 405 也转为 HTTP 429
+        if (Number(moduleResponse.body.code) === 405) {
+          res.set('Retry-After', '30')
+          return res.status(429).send(moduleResponse.body)
         }
 
         res.status(moduleResponse.status).send(moduleResponse.body)
