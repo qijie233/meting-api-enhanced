@@ -485,6 +485,7 @@ async function serveNcmApi(options) {
   ╔═╗╔═╗╦    ╔═╗╔╗╔╦ ╦╔═╗╔╗╔╔═╗╔═╗╔╦╗
   ╠═╣╠═╝║    ║╣ ║║║╠═╣╠═╣║║║║  ║╣  ║║
   ╩ ╩╩  ╩    ╚═╝╝╚╝╩ ╩╩ ╩╝╚╝╚═╝╚═╝═╩╝
+                  QIJIE
     `)
     logger.info(
       `Server started successfully @ http://${host ? host : 'localhost'}:${port}`,
