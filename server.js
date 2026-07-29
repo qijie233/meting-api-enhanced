@@ -343,7 +343,7 @@ async function constructServer(moduleDefs) {
 
       let query = Object.assign(
         {},
-        { cookie: req.cookies },
+        { cookie: req.cookies, _req: req },
         req.query,
         req.body,
         req.files,

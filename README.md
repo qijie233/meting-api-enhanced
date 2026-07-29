@@ -163,11 +163,41 @@ docker run -d -p 3000:3000 --name ncm-api moefurina/ncm-api:latest
 | `ENABLE_GENERAL_UNBLOCK` | `true` | 是否启用全局自动解灰 |
 | `ENABLE_FLAC` | `true` | 是否启用无损音质 |
 | `NETEASE_COOKIE` | — | 默认网易云 Cookie（详见下节） |
+| `BASE_URL` | — | 项目完整域名（如 `https://your-domain.com`），用于生成绝对 URL；留空则自动从请求 headers 识别 |
 | `DEBUG_COOKIE` | — | 设为 `1` 打印 cookie 解析/对象→字符串日志 |
 | `DEBUG_URL` | — | 设为 `1` 打印 NCM `song/enhance/player/url` 请求与响应日志 |
 | `DEBUG_METING` | — | 设为 `1` 打印 `/meting` 端点内部流向日志 |
 
 完整配置示例见 `.env.prod.example`。
+
+### 域名配置（BASE_URL）
+
+meting 端点返回的 URL（`type=song/playlist/search`）支持自动识别部署域名：
+
+- **自动识别**（默认）：从请求 headers 中的 `Host` 和 `X-Forwarded-Proto` 自动获取域名，支持反向代理场景
+- **手动设置**：在 `.env` 中配置 `BASE_URL=https://your-domain.com`，强制使用指定域名
+
+```bash
+# 自动识别（推荐，支持反向代理）
+# 无需配置，自动从请求中获取
+
+# 手动设置域名
+BASE_URL=https://music.example.com
+```
+
+返回示例：
+
+```json
+[
+  {
+    "name": "歌曲名",
+    "artist": "歌手",
+    "url": "https://music.example.com/meting/?type=url&server=netease&id=123456&br=320",
+    "pic": "https://music.example.com/meting/?type=pic&server=netease&id=123456&cover=300",
+    "lrc": "https://music.example.com/meting/?type=lrc&server=netease&id=123456"
+  }
+]
+```
 
 ### Cookie 配置（解锁 VIP 歌曲）
 
