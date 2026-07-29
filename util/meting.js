@@ -76,14 +76,13 @@ function mergeLyric(lyric, tlyric) {
 }
 
 /**
- * 构建指向 /meting 自身的相对 URL（用于 song/playlist/search 返回的子链接）。
- * 模块拿不到 req，无法生成绝对地址，因此返回相对路径；前端播放器通过
- * window.meting_api 拼接。
+ * 构建指向 /meting 自身的 URL（用于 song/playlist/search 返回的子链接）。
+ * 优先使用环境变量 BASE_URL，若未设置则从请求 headers 中自动识别域名。
  *
  * @param {string} type       url | pic | lrc
  * @param {string} songId     歌曲 ID
  * @param {string} server     数据源（保留字段，meting 客户端会校验，目前仅 netease）
- * @param {object} [opts]     { br, cover } 仅在显式传入时透传
+ * @param {object} [opts]     { br, cover, req } req 为 Express 请求对象，用于自动识别域名
  * @returns {string}
  */
 function buildMetingUrl(type, songId, server, opts) {
@@ -97,7 +96,27 @@ function buildMetingUrl(type, songId, server, opts) {
   if (opts.cover != null && opts.cover !== '') {
     params.push('cover=' + encodeURIComponent(String(opts.cover)))
   }
-  return '/meting/?' + params.join('&')
+  const queryString = params.join('&')
+
+  // 获取 baseUrl：优先环境变量，其次从请求中识别
+  let baseUrl = ''
+  if (process.env.BASE_URL) {
+    baseUrl = process.env.BASE_URL.replace(/\/+$/, '') // 移除末尾斜杠
+  } else if (opts.req) {
+    const req = opts.req
+    const protocol = req.headers['x-forwarded-proto'] || req.protocol || 'http'
+    const host = req.headers['x-forwarded-host'] || req.headers.host || ''
+    if (host) {
+      baseUrl = `${protocol}://${host}`
+    }
+    if (process.env.DEBUG_METING) {
+      console.log('[DEBUG buildMetingUrl] req exists, protocol:', protocol, 'host:', host, 'baseUrl:', baseUrl)
+    }
+  } else if (process.env.DEBUG_METING) {
+    console.log('[DEBUG buildMetingUrl] opts.req is falsy:', opts.req)
+  }
+
+  return baseUrl ? `${baseUrl}/meting/?${queryString}` : `/meting/?${queryString}`
 }
 
 /**

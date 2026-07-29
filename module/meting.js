@@ -87,7 +87,7 @@ function needsUnblock(songItem) {
  * 把 NCM song 对象转为 meting 协议中 song/playlist/search 的统一返回项。
  *
  * @param {object} song       NCM song 对象（含 id/name/ar/al）
- * @param {object} opts       { br, cover, server }
+ * @param {object} opts       { br, cover, server, req }
  * @param {object} query      原始 query，用于向内部模块透传 cookie
  * @param {function} request  server.js 注入的请求函数
  * @returns {object} { name, artist, url, pic, lrc }
@@ -141,7 +141,9 @@ async function buildSongItem(song, opts, query, request) {
   // 合并 LRC（中文翻译）
   let lrcText = ''
   if (lyricRes && lyricRes.body) {
-    lrcText = mergeLyric(lyricRes.body.lyric, lyricRes.body.tlyric)
+    const lrcData = lyricRes.body.lrc
+    const tlyricData = lyricRes.body.tlyric
+    lrcText = mergeLyric(lrcData && lrcData.lyric, tlyricData && tlyricData.lyric)
   }
 
   // picUrl 升级分辨率：NCM 默认 300x300，把尺寸替换为 opts.cover
@@ -152,12 +154,17 @@ async function buildSongItem(song, opts, query, request) {
       `?param=${opts.cover}y${opts.cover}`
   }
 
+  // 构建 meting URL，传递 req 对象用于自动识别域名
+  const urlOpts = { br: opts.br, req: opts.req }
+  const picOpts = { cover: opts.cover, req: opts.req }
+  const lrcOpts = { req: opts.req }
+
   return {
     name: song.name || '',
     artist: formatArtist(song.ar),
-    url: buildMetingUrl('url', songId, opts.server, { br: opts.br }),
-    pic: buildMetingUrl('pic', songId, opts.server, { cover: opts.cover }),
-    lrc: buildMetingUrl('lrc', songId, opts.server),
+    url: buildMetingUrl('url', songId, opts.server, urlOpts),
+    pic: buildMetingUrl('pic', songId, opts.server, picOpts),
+    lrc: buildMetingUrl('lrc', songId, opts.server, lrcOpts),
   }
 }
 
@@ -270,6 +277,7 @@ module.exports = async (query, request) => {
     br: Math.max(1, brRaw),
     cover: Math.max(1, coverRaw),
     server: 'netease', // server 参数静默忽略，仅做保留字段
+    req: query._req, // 传递 req 对象用于自动识别域名
   }
 
   try {
@@ -357,9 +365,11 @@ module.exports = async (query, request) => {
 
       case 'lrc': {
         const res = await lyricModule({ id: id, cookie: query.cookie }, request)
+        const lrcData = res.body && res.body.lrc
+        const tlyricData = res.body && res.body.tlyric
         const merged = mergeLyric(
-          res.body && res.body.lyric,
-          res.body && res.body.tlyric,
+          lrcData && lrcData.lyric,
+          tlyricData && tlyricData.lyric,
         )
         return { status: 200, body: merged }
       }
