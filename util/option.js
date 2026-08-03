@@ -1,7 +1,8 @@
 const createOption = (query, crypto = '') => {
+  // 登录路由不回落 NETEASE_COOKIE（防止泄露配置的 MUSIC_U 到响应体）
   const cookie = typeof query.cookie === 'string' && query.cookie.length > 0
     ? query.cookie
-    : process.env.NETEASE_COOKIE
+    : query._skipEnvCookie ? '' : process.env.NETEASE_COOKIE
   // Debug log
   if (process.env.DEBUG_COOKIE) {
     console.log('[DEBUG cookie] query.cookie type:', typeof query.cookie, 'len:', query.cookie ? query.cookie.length : 0)

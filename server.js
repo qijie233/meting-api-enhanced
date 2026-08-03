@@ -223,27 +223,11 @@ async function constructServer(moduleDefs) {
    */
   const PUBLIC_MODE = process.env.PUBLIC_MODE !== 'false'
   if (PUBLIC_MODE) {
-    const DANGER_PREFIXES = [
-      '/login', '/user', '/cloud',
-      '/daily_signin', '/personal_fm', '/scrobble',
-      '/register', '/activate', '/captcha', '/sms', '/verify',
-      '/msg', '/event', '/voice',
-      '/log', '/clientlog', '/manhole', '/block', '/feed',
-      '/inner',
-      '/resource/like', '/resource/sub',
-      '/comment/like', '/comment/block', '/comment/floor', '/comment/tunnel',
-      '/playlist/create', '/playlist/delete', '/playlist/subscribe',
-      '/playlist/tracks', '/playlist/track/delete',
-      '/playlist/update', '/playlist/name', '/playlist/desc',
-      '/playlist/tags', '/playlist/order', '/playlist/cover',
-      '/artist/sub', '/artist/unsub',
-      '/album/sub', '/album/unsub',
-      '/dj/sub', '/dj/unsub',
-      '/mv/sub',
-      '/song/upload',
-      '/yunbei',
-      '/follow',
-    ]
+    // 公开模式：不通过 HTTP 封禁，而是对登录路由阻止 NETEASE_COOKIE 回落
+    // （/login/refresh 等会将刷新的 MUSIC_U 写进响应体）。
+    // 用户自带 cookie 正常使用；无 cookie 时登录路由用匿名 token，不泄露配置的 cookie。
+    // 如需封禁更多端点，在此添加前缀即可。
+    const DANGER_PREFIXES = []
     app.use((req, res, next) => {
       const p = req.path.replace(/\/+$/, '') || '/'
       // 静态资源（含扩展名）直接放行
@@ -255,11 +239,11 @@ async function constructServer(moduleDefs) {
       if (blocked) {
         return res.status(404).json({ code: 404, data: null, msg: 'Not Found' })
       }
-      // 其余全部放行（所有只读音乐接口）
+      // 其余全部放行
       next()
     })
     logger.info(
-      '公开模式已启用（黑名单）：封禁危险端点（/login/* 等），其余全部放行；自用需设置 PUBLIC_MODE=false',
+      '公开模式已启用：登录路由已保护（不回落 NETEASE_COOKIE），其余端点全部放行；自用需设置 PUBLIC_MODE=false',
     )
   } else {
     logger.info(
@@ -409,12 +393,14 @@ async function constructServer(moduleDefs) {
         }
       })
 
+      const isLoginRoute = moduleDef.route.startsWith('/login')
       let query = Object.assign(
         {},
         { cookie: req.cookies, _req: req },
         req.query,
         req.body,
         req.files,
+        isLoginRoute ? { _skipEnvCookie: true } : {},
       )
 
       try {
