@@ -11,6 +11,7 @@ const createOption = (query, crypto = '') => {
   return {
     crypto: query.crypto || crypto || '',
     cookie: cookie,
+    _skipEnvCookie: query._skipEnvCookie,
     ua: query.ua || '',
     proxy: query.proxy,
     realIP: query.realIP,
