@@ -1,8 +1,16 @@
+const { cookieObjToString } = require('./index')
+
 const createOption = (query, crypto = '') => {
-  // 登录路由不回落 NETEASE_COOKIE（防止泄露配置的 MUSIC_U 到响应体）
+  // cookie 来源优先级：
+  // 1. 字符串（用户通过 Header 或 query 传入）
+  // 2. 对象（用户通过 POST body 传入，被 server.js 解析为对象）
+  // 3. 回落逻辑：登录路由不回落 NETEASE_COOKIE，其余回落
+  const userObj = typeof query.cookie === 'object' && Object.keys(query.cookie).length > 0
   const cookie = typeof query.cookie === 'string' && query.cookie.length > 0
     ? query.cookie
-    : query._skipEnvCookie ? '' : process.env.NETEASE_COOKIE
+    : userObj
+      ? cookieObjToString(query.cookie)
+      : query._skipEnvCookie ? '' : process.env.NETEASE_COOKIE
   // Debug log
   if (process.env.DEBUG_COOKIE) {
     console.log('[DEBUG cookie] query.cookie type:', typeof query.cookie, 'len:', query.cookie ? query.cookie.length : 0)
