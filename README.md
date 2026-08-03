@@ -153,7 +153,7 @@ docker run -d -p 3000:3000 --name ncm-api moefurina/ncm-api:latest
 
 ## 公开模式（PUBLIC_MODE）
 
-默认开启。开启后仅放行 `/meting`、`/stats` 与静态资源，封禁 `/login/*`、`/user/*`、`/song/*`、`/playlist/*`、`/cloud*`、`/daily_signin`、`/personal_fm`、`/search` 等 ~400 个原生 NCM 端点，防止匿名调用方滥用（刷接口/当免费 NCM 代理）或在误配 cookie 时泄露账号信息。`/meting` 内部通过 `require()` 直接调用各模块函数（不走 HTTP 路由），封禁不影响其功能。封禁返回 `404`，与未知路由表现一致。
+默认开启（黑名单制）。封禁危险端点（`/login/*`、`/user/*`、`/cloud*`、`/daily_signin`、`/personal_fm`、`/scrobble*`、`/msg/*`、`/event/*` 等登录/账号/写入类），其余全部放行——包括 `/meting`、`/search`、`/song/detail`、`/song/url/v1`、`/comment/music`、`/lyric`、`/playlist/detail` 等常用只读音乐接口。封禁返回 `404`，与未知路由表现一致。防止公网匿名调用方滥用（刷接口/当免费 NCM 代理）或在误配 cookie 时泄露账号信息。`/meting` 内部通过 `require()` 直调模块，不受影响。
 
 自用（需要全部端点）时设置 `PUBLIC_MODE=false` 关闭，全功能恢复。
 
@@ -181,7 +181,7 @@ PUBLIC_MODE=false
 | `DEBUG_COOKIE` | — | 设为 `1` 打印 cookie 解析/对象→字符串日志 |
 | `DEBUG_URL` | — | 设为 `1` 打印 NCM `song/enhance/player/url` 请求与响应日志 |
 | `DEBUG_METING` | — | 设为 `1` 打印 `/meting` 端点内部流向日志 |
-| `PUBLIC_MODE` | `true` | 公开模式（默认开启）：仅放行 `/meting`、`/stats` 与静态资源，封禁其余原生端点（详见上节）。自用设为 `false` |
+| `PUBLIC_MODE` | `true` | 公开模式（默认开启）：黑名单制——封禁危险端点，其余放开（详见上节）。自用设为 `false` |
 
 完整配置示例见 `.env.prod.example`。
 

@@ -200,38 +200,66 @@ async function constructServer(moduleDefs) {
   app.set('trust proxy', true)
 
   /**
-   * 公开模式（默认开启）：仅放行 /meting 与必要静态/统计端点，封禁全部原生
-   * NCM 端点（/login/*、/user/*、/song/*、/playlist/*、/cloud*、/daily_signin、
-   * /personal_fm、/search 等 ~400 个路由），防止公网匿名调用方滥用（刷接口、
-   * 把本服务当免费 NCM 代理）或在误配 cookie 时泄露账号信息。
+   * 公开模式（默认开启）：黑名单制 —— 只封禁危险端点（登录/账号/写入类），
+   * 其余全部放行（包括 /meting、/search、/song/detail、/comment/music、
+   * /song/url/v1 等常用只读音乐接口）。
    *
-   * 默认即生效，适合公网部署。自用（需要全部端点）时设置 PUBLIC_MODE=false 关闭。
+   * 封禁类别：
+   *   登录认证    /login/*、/register*、/activate、/captcha、/sms、/verify
+   *   账号信息    /user/*（含 /user/account、/user/update 等）
+   *   云盘/声音   /cloud*、/voice*
+   *   账号操作    /daily_signin、/personal_fm、/scrobble*
+   *   私信        /msg/*
+   *   动态/社交   /event/*、/feed/*、/block/*
+   *   内部/日志   /inner/*、/log/*、/clientlog*
+   *   调试        /manhole/*
+   *   写入操作    歌单写、评论写、艺人/专辑/DJ/MV 关注、歌曲上传、资源点赞
    *
-   * 安全前提：/meting 内部通过 require() 直接调用 song_url / playlist_detail /
-   * search / lyric 等模块函数（不走 HTTP 路由），因此封禁这些端点的 HTTP 路由
-   * 不会影响 /meting 的任何功能。
+   * 默认即生效，适合公开音乐 API 部署。自用（需要全部端点）时设置
+   * PUBLIC_MODE=false 关闭。封禁返回 404（与未知路由表现一致）。
    *
-   * 放行规则：
-   *   - /meting（含尾斜杠）   ← 唯一的对外 API
-   *   - /stats                ← 调用计数（无敏感信息）
-   *   - /                     ← 首页（部分原生链接在公开模式下会 404，属预期）
-   *   - 含 "." 的路径          ← 静态资源（/meting.html、/favicon.ico、css/js/img 等）
-   *     注意：login.html / cloud.html / scrobble.html 等工具页虽可被访问，但其
-   *     依赖的原生端点均已被封禁，因此处于“可打开、不可用”的惰性状态，无安全风险。
-   * 其余一律 404（与未知路由表现一致，不暴露端点存在性）。
+   * 安全前提：/meting 内部通过 require() 直接调用模块函数（不走 HTTP 路由），
+   * 因此封禁这些端点的 HTTP 路由不影响 /meting 任何功能。
    */
   const PUBLIC_MODE = process.env.PUBLIC_MODE !== 'false'
   if (PUBLIC_MODE) {
-    const PUBLIC_ALLOWED = new Set(['/', '/meting', '/stats'])
+    const DANGER_PREFIXES = [
+      '/login', '/user', '/cloud',
+      '/daily_signin', '/personal_fm', '/scrobble',
+      '/register', '/activate', '/captcha', '/sms', '/verify',
+      '/msg', '/event', '/voice',
+      '/log', '/clientlog', '/manhole', '/block', '/feed',
+      '/inner',
+      '/resource/like', '/resource/sub',
+      '/comment/like', '/comment/block', '/comment/floor', '/comment/tunnel',
+      '/playlist/create', '/playlist/delete', '/playlist/subscribe',
+      '/playlist/tracks', '/playlist/track/delete',
+      '/playlist/update', '/playlist/name', '/playlist/desc',
+      '/playlist/tags', '/playlist/order', '/playlist/cover',
+      '/artist/sub', '/artist/unsub',
+      '/album/sub', '/album/unsub',
+      '/dj/sub', '/dj/unsub',
+      '/mv/sub',
+      '/song/upload',
+      '/yunbei',
+      '/follow',
+    ]
     app.use((req, res, next) => {
       const p = req.path.replace(/\/+$/, '') || '/'
-      if (PUBLIC_ALLOWED.has(p) || p.includes('.')) {
-        return next()
+      // 静态资源（含扩展名）直接放行
+      if (p.includes('.')) return next()
+      // 检查黑名单：路径以危险前缀开头，且后接字符串结束或 “/”
+      const blocked = DANGER_PREFIXES.some(prefix =>
+        p.startsWith(prefix) && (p.length === prefix.length || p[prefix.length] === '/')
+      )
+      if (blocked) {
+        return res.status(404).json({ code: 404, data: null, msg: 'Not Found' })
       }
-      res.status(404).json({ code: 404, data: null, msg: 'Not Found' })
+      // 其余全部放行（所有只读音乐接口）
+      next()
     })
     logger.info(
-      '公开模式已启用（默认）：仅放行 /meting、/stats 与静态资源，其余原生端点均已封禁；自用需设置 PUBLIC_MODE=false',
+      '公开模式已启用（黑名单）：封禁危险端点（/login/* 等），其余全部放行；自用需设置 PUBLIC_MODE=false',
     )
   } else {
     logger.info(
