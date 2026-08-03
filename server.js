@@ -200,6 +200,40 @@ async function constructServer(moduleDefs) {
   app.set('trust proxy', true)
 
   /**
+   * 公开模式（PUBLIC_MODE=true）：仅放行 /meting 与必要静态/统计端点，
+   * 封禁全部原生 NCM 端点（/login/*、/user/*、/song/*、/playlist/*、/cloud*、
+   * /daily_signin、/personal_fm、/search 等 ~400 个路由），防止公网匿名调用方
+   * 滥用（刷接口、把本服务当免费 NCM 代理）或在误配 cookie 时泄露账号信息。
+   *
+   * 安全前提：/meting 内部通过 require() 直接调用 song_url / playlist_detail /
+   * search / lyric 等模块函数（不走 HTTP 路由），因此封禁这些端点的 HTTP 路由
+   * 不会影响 /meting 的任何功能。
+   *
+   * 放行规则：
+   *   - /meting（含尾斜杠）   ← 唯一的对外 API
+   *   - /stats                ← 调用计数（无敏感信息）
+   *   - /                     ← 首页（部分原生链接在公开模式下会 404，属预期）
+   *   - 含 "." 的路径          ← 静态资源（/meting.html、/favicon.ico、css/js/img 等）
+   *     注意：login.html / cloud.html / scrobble.html 等工具页虽可被访问，但其
+   *     依赖的原生端点均已被封禁，因此处于“可打开、不可用”的惰性状态，无安全风险。
+   * 其余一律 404（与未知路由表现一致，不暴露端点存在性）。
+   */
+  const PUBLIC_MODE = process.env.PUBLIC_MODE === 'true'
+  if (PUBLIC_MODE) {
+    const PUBLIC_ALLOWED = new Set(['/', '/meting', '/stats'])
+    app.use((req, res, next) => {
+      const p = req.path.replace(/\/+$/, '') || '/'
+      if (PUBLIC_ALLOWED.has(p) || p.includes('.')) {
+        return next()
+      }
+      res.status(404).json({ code: 404, data: null, msg: 'Not Found' })
+    })
+    logger.info(
+      'PUBLIC_MODE 已启用：仅放行 /meting、/stats 与静态资源，其余原生端点均已封禁',
+    )
+  }
+
+  /**
    * 调用统计中间件 —— 每个 HTTP 请求递增 api 计数器
    * 排除 /stats 自身（避免 self-reference 膨胀计数）
    * recordApi 是同步函数（Node 单线程 JS 中 fs.writeFileSync 原子安全）
