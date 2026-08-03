@@ -129,7 +129,7 @@ const chooseUserAgent = (crypto, uaType = 'pc') => {
 }
 
 // cookie处理
-const processCookieObject = (cookie, uri) => {
+const processCookieObject = (cookie, uri, options) => {
   const _ntes_nuid = CryptoJS.lib.WordArray.random(32).toString()
   const os = osMap[cookie.os] || osMap['pc']
 
@@ -154,12 +154,15 @@ const processCookieObject = (cookie, uri) => {
 
   if (!processedCookie.MUSIC_U) {
     // 如果 cookie 中没有 MUSIC_U，尝试从环境变量获取
-    const envCookie = process.env.NETEASE_COOKIE
-    if (envCookie) {
-      const { cookieToJson } = require('./index')
-      const parsed = cookieToJson(envCookie)
-      if (parsed.MUSIC_U) {
-        processedCookie.MUSIC_U = parsed.MUSIC_U
+    // _skipEnvCookie 为 true 时跳过（防止登录路由泄露配置的 MUSIC_U）
+    if (!(options && options._skipEnvCookie)) {
+      const envCookie = process.env.NETEASE_COOKIE
+      if (envCookie) {
+        const { cookieToJson } = require('./index')
+        const parsed = cookieToJson(envCookie)
+        if (parsed.MUSIC_U) {
+          processedCookie.MUSIC_U = parsed.MUSIC_U
+        }
       }
     }
     if (!processedCookie.MUSIC_U) {
@@ -209,7 +212,7 @@ const createRequest = (uri, data, options) => {
     }
 
     if (typeof cookie === 'object') {
-      cookie = processCookieObject(cookie, uri)
+      cookie = processCookieObject(cookie, uri, options)
       headers['Cookie'] = cookieObjToString(cookie)
     }
     // DEBUG: print raw NETEASE_COOKIE for song_url
