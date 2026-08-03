@@ -200,10 +200,12 @@ async function constructServer(moduleDefs) {
   app.set('trust proxy', true)
 
   /**
-   * 公开模式（PUBLIC_MODE=true）：仅放行 /meting 与必要静态/统计端点，
-   * 封禁全部原生 NCM 端点（/login/*、/user/*、/song/*、/playlist/*、/cloud*、
-   * /daily_signin、/personal_fm、/search 等 ~400 个路由），防止公网匿名调用方
-   * 滥用（刷接口、把本服务当免费 NCM 代理）或在误配 cookie 时泄露账号信息。
+   * 公开模式（默认开启）：仅放行 /meting 与必要静态/统计端点，封禁全部原生
+   * NCM 端点（/login/*、/user/*、/song/*、/playlist/*、/cloud*、/daily_signin、
+   * /personal_fm、/search 等 ~400 个路由），防止公网匿名调用方滥用（刷接口、
+   * 把本服务当免费 NCM 代理）或在误配 cookie 时泄露账号信息。
+   *
+   * 默认即生效，适合公网部署。自用（需要全部端点）时设置 PUBLIC_MODE=false 关闭。
    *
    * 安全前提：/meting 内部通过 require() 直接调用 song_url / playlist_detail /
    * search / lyric 等模块函数（不走 HTTP 路由），因此封禁这些端点的 HTTP 路由
@@ -218,7 +220,7 @@ async function constructServer(moduleDefs) {
    *     依赖的原生端点均已被封禁，因此处于“可打开、不可用”的惰性状态，无安全风险。
    * 其余一律 404（与未知路由表现一致，不暴露端点存在性）。
    */
-  const PUBLIC_MODE = process.env.PUBLIC_MODE === 'true'
+  const PUBLIC_MODE = process.env.PUBLIC_MODE !== 'false'
   if (PUBLIC_MODE) {
     const PUBLIC_ALLOWED = new Set(['/', '/meting', '/stats'])
     app.use((req, res, next) => {
@@ -229,7 +231,11 @@ async function constructServer(moduleDefs) {
       res.status(404).json({ code: 404, data: null, msg: 'Not Found' })
     })
     logger.info(
-      'PUBLIC_MODE 已启用：仅放行 /meting、/stats 与静态资源，其余原生端点均已封禁',
+      '公开模式已启用（默认）：仅放行 /meting、/stats 与静态资源，其余原生端点均已封禁；自用需设置 PUBLIC_MODE=false',
+    )
+  } else {
+    logger.info(
+      '公开模式已关闭（PUBLIC_MODE=false）：全部原生端点可访问，请确保不暴露在公网',
     )
   }
 
